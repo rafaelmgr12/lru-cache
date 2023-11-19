@@ -9,7 +9,7 @@ type LRUCache struct {
 	capacity int
 	items    map[int]*list.Element
 	queue    *list.List
-	mu       sync.RWMutex // Usando RWMutex para leitura otimizada
+	mu       sync.RWMutex
 }
 
 type cacheItem struct {
@@ -26,7 +26,7 @@ func NewLRUCache(capacity int) *LRUCache {
 }
 
 func (c *LRUCache) Get(key int) interface{} {
-	c.mu.RLock() // Lock para leitura
+	c.mu.RLock()
 	defer c.mu.RUnlock()
 	if elem, found := c.items[key]; found {
 		c.queue.MoveToFront(elem)
@@ -36,9 +36,9 @@ func (c *LRUCache) Get(key int) interface{} {
 }
 
 func (c *LRUCache) Set(key int, value interface{}) {
-	newItem := &cacheItem{key, value} // Criar o item fora do bloqueio
+	newItem := &cacheItem{key, value}
 
-	c.mu.Lock() // Lock para escrita
+	c.mu.Lock()
 	defer c.mu.Unlock()
 	if elem, found := c.items[key]; found {
 		c.queue.MoveToFront(elem)
