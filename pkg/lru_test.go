@@ -1,6 +1,7 @@
 package lru_test
 
 import (
+	"os"
 	"sync"
 	"testing"
 
@@ -110,5 +111,35 @@ func TestLRUCacheConcurrentAccess(t *testing.T) {
 				t.Errorf("Got %v, want %v for key %v", val, expectedValue, key)
 			}
 		}
+	}
+}
+
+func TestSaveAndLoadLRUCache(t *testing.T) {
+	cache := lru.NewLRUCache(2)
+	cache.Set(1, "one")
+	cache.Set(2, "two")
+
+	filename := "test_cache.json"
+	defer os.Remove(filename)
+
+	err := cache.SaveToFile(filename)
+	if err != nil {
+		t.Fatalf("Failed to save to file: %v", err)
+	}
+
+	newCache := lru.NewLRUCache(2)
+	err = newCache.LoadFromFile(filename)
+	if err != nil {
+		t.Fatalf("Failed to load from file: %v", err)
+	}
+
+	// Verifica se os dados carregados estão corretos
+	val, ok := newCache.Get(1).(string)
+	if !ok || val != "one" {
+		t.Errorf("Expected 'one', got '%v'", val)
+	}
+	val, ok = newCache.Get(2).(string)
+	if !ok || val != "two" {
+		t.Errorf("Expected 'two', got '%v'", val)
 	}
 }
