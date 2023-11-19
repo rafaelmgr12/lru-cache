@@ -1,6 +1,7 @@
 package lru_test
 
 import (
+	"sync"
 	"testing"
 
 	lru "github.com/rafaelmgr12/lru-cache/pkg"
@@ -75,4 +76,39 @@ func TestLRUCache(t *testing.T) {
 		item = cache.Get(4)
 		assert.Equal(t, "newItem4", item, "Expected updated item 4 to be in cache")
 	})
+}
+
+func TestLRUCacheConcurrentAccess(t *testing.T) {
+	cache := lru.NewLRUCache(500)
+	var wg sync.WaitGroup
+
+	numGoroutines := 50
+
+	goroutineFunc := func(id int) {
+		defer wg.Done()
+		for i := 0; i < 10; i++ {
+			key := id*10 + i
+			cache.Set(key, key*100)
+			if val, _ := cache.Get(key).(int); val != key*100 {
+				t.Errorf("Got %v, want %v", val, key*100)
+			}
+		}
+	}
+
+	wg.Add(numGoroutines)
+	for i := 0; i < numGoroutines; i++ {
+		go goroutineFunc(i)
+	}
+
+	wg.Wait()
+
+	for i := 0; i < numGoroutines; i++ {
+		for j := 0; j < 10; j++ {
+			key := i*10 + j
+			expectedValue := key * 100
+			if val, _ := cache.Get(key).(int); val != expectedValue {
+				t.Errorf("Got %v, want %v for key %v", val, expectedValue, key)
+			}
+		}
+	}
 }
