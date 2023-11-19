@@ -1,11 +1,15 @@
 package lru
 
-import "container/list"
+import (
+	"container/list"
+	"sync"
+)
 
 type LRUCache struct {
 	capacity int
 	items    map[int]*list.Element
 	queue    *list.List
+	mu       sync.Mutex
 }
 
 type cacheItem struct {
@@ -14,6 +18,7 @@ type cacheItem struct {
 }
 
 func NewLRUCache(capacity int) *LRUCache {
+
 	return &LRUCache{
 		capacity: capacity,
 		items:    make(map[int]*list.Element),
@@ -21,6 +26,8 @@ func NewLRUCache(capacity int) *LRUCache {
 	}
 }
 func (c *LRUCache) Get(key int) interface{} {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if elem, found := c.items[key]; found {
 		c.queue.MoveToFront(elem)
 		return elem.Value.(*cacheItem).value
@@ -29,6 +36,8 @@ func (c *LRUCache) Get(key int) interface{} {
 }
 
 func (c *LRUCache) Set(key int, value interface{}) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if elem, found := c.items[key]; found {
 		c.queue.MoveToFront(elem)
 		elem.Value.(*cacheItem).value = value
